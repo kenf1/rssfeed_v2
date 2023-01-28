@@ -1,0 +1,63 @@
+---
+title: "Simple Rss Reader"
+output: 
+  html_document:
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup,include=FALSE}
+knitr::opts_chunk$set(
+	echo=FALSE,
+	message=FALSE,
+	warning=FALSE,
+	eval=TRUE,
+	comment=NA 
+)
+```
+
+```{r,include=FALSE}
+gc()
+library(tidyverse)
+library(feedeR)
+library(shiny)
+library(data.table)
+```
+
+```{r}
+link <- "old.reddit.com/r/tabletennis/new.rss"
+rss_data <- feedeR::feed.extract(link)
+```
+
+#### This RSS Feed was updated on: `r rss_data[["updated"]]`
+
+RSS Feed from: `r rss_data[["link"]]`
+
+```{r}
+#'1.separate date -> day + time
+#'2.extract text from description
+#'3.shorten all links into "Link"
+#'4.rm cols
+#'5.reorder cols
+rss_table <- rss_data[["items"]] %>%
+  tidyr::separate(col=date,into=c("day","time"),sep=" ") %>%
+  dplyr::mutate(desc=str_extract(description,"<p>.*</p>") %>%
+  stringr::str_replace_all(c("<p>"="","</p>"=""))) %>%
+  dplyr::mutate(new_link=lapply(rss_data[["items"]]$link,function(x){
+    paste(link=toString(shiny::tags$a(href=paste0(x),"Link")))
+  })) %>%
+  select(-c("link","description","hash")) %>%
+  dplyr::relocate(new_link,.after=title)
+
+names(rss_table) <- c("Title","Link","Date","Time","Description")
+```
+
+```{r}
+#render table
+finalized <- rss_table
+knitr::kable(data.table::data.table(finalized))
+```
+
+---
+
+##### Created by [KF](https://github.com/kenf1) using R.
