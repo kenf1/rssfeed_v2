@@ -1,0 +1,21 @@
+on:
+  workflow_dispatch:
+
+name: Render Rmd
+
+jobs:
+  render:
+    name: Render README
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: r-lib/actions/setup-r@v1
+      - uses: r-lib/actions/setup-pandoc@v1
+      - name: Install R packages
+        run: Rscript -e 'install.packages(c("rmarkdown","tidyverse","feedeR","shiny","data.table"))'
+      - name: Render html
+        run: Rscript -e 'rmarkdown::render("index.Rmd", output_format = "html_document")'
+      - name: Commit results
+        run: |
+          git commit index.html -m 'Create html' || echo "No changes to commit"
+          git push origin || echo "No changes to commit"
